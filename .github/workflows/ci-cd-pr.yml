@@ -30,6 +30,9 @@ jobs:
           ./.github/secrets/decrypt_store_secrets.sh
         env:
           IOS_PROFILE_KEY: ${{ secrets.IOS_PROFILE_KEY }}
+
+      - name: Build App
+        run: flutter build ios  --release --no-codesign
           
       - name: Test App
         run: flutter test
