@@ -1,12 +1,3 @@
-- name: Collaborators
-  is_public: false
-  members:
-    android:
-    - ahbilal@microsoft.com
-    ios:
-    - ahbilal@microsoft.com
-  releases: []
-
 - name: alpha_group
   is_public: false
   members:
@@ -16,4 +7,12 @@
     ios:
     - ahbilal@microsoft.com
     - ahdbilal@gmail.com
+  releases: []
+- name: Collaborators
+  is_public: false
+  members:
+    android:
+    - ahbilal@microsoft.com
+    ios:
+    - ahbilal@microsoft.com
   releases: []
