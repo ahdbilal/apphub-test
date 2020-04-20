@@ -7,6 +7,30 @@
     ios:
     - ahbilal@microsoft.com
     - ahdbilal@gmail.com
+  releases:
+  - 2
+- name: beta_group
+  is_public: false
+  members:
+    android:
+    - ahdbilal@github.com
+    - abilal@mit.edu
+    ios:
+    - ahbilal@microsoft.com
+    - ahmedbilal_@hotmail.com
+  releases:
+  - 7
+- name: beta_internal
+  is_public: false
+  members:
+    android:
+    - 001@ahdbilal.com
+    - 002@ahdbilal.com
+    - 003@ahdbilal.com
+    ios:
+    - 900@ahdbilal.com
+    - 901@ahdbilal.com
+    - 902@ahdbilal.com
   releases: []
 - name: Collaborators
   is_public: false
@@ -15,4 +39,10 @@
     - ahbilal@microsoft.com
     ios:
     - ahbilal@microsoft.com
+  releases: []
+- name: public
+  is_public: true
+  members:
+    android: []
+    ios: []
   releases: []
