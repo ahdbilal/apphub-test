@@ -20,8 +20,8 @@ class TabBarDemo extends StatelessWidget {
                 Tab(icon: Icon(Icons.bug_report  ))
               ],
             ),
-            backgroundColor: const Color(0xFFC51162),
-            title: Text('Visual Studio App Center'),
+            backgroundColor: const Color(0xFF212121),
+            title: Text('GitHub App Center'),
           ),
           body: TabBarView(
             children: [
@@ -35,7 +35,7 @@ class TabBarDemo extends StatelessWidget {
                             child: FittedBox(
                               fit: BoxFit.contain, // otherwise the logo will be tiny
                               child: const Image(
-                                image: AssetImage('assets/appcenter.png'),
+                                image: AssetImage('assets/github.png'),
                               ),
                             ),
                           ),
