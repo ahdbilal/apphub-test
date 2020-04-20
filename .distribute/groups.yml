@@ -1,1 +1,8 @@
-
+- name: Collaborators
+  is_public: false
+  members:
+    android:
+    - ahbilal@microsoft.com
+    ios:
+    - ahbilal@microsoft.com
+  releases: []
