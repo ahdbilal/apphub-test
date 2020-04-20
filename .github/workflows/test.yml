@@ -1,0 +1,33 @@
+name: test
+
+on: 
+  pull_request:
+    types: [assigned,review_requested]
+  
+
+jobs:
+  sync-groups:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup Python
+      uses: actions/setup-python@v1.2.0
+
+    - name: Dump GitHub context
+      id: test
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: |
+        pip install PyYAML
+        group=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "destinations-group" ${{ github.base_ref }} )
+        echo $group
+        publish=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "publish" ${{ github.base_ref }} )
+        echo "::set-output name=publish::"${publish//\'}""
+        echo $publish
+
+    - name: to_run
+      if: steps.test.outputs.publish == 'True'
+      run: |
+        echo "in"

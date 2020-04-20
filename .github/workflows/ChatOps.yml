@@ -1,0 +1,49 @@
+name: ChatOps
+
+on: [issue_comment]
+
+jobs:
+  label-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Listen for PR Comments
+        uses: machine-learning-apps/actions-chatops@master
+        with:
+          TRIGGER_PHRASE: "/distribute"
+        env: # you must supply GITHUB_TOKEN
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: prcomm
+      
+      - name: Checking Out
+        if: steps.prcomm.outputs.BOOL_TRIGGERED == 'true'
+        uses: actions/checkout@v2
+          
+      - name: App Center
+        if: steps.prcomm.outputs.BOOL_TRIGGERED == 'true'
+        id: cli
+        run: |
+          npm install appcenter-cli
+          comment=$(npx appcenter distribute  ${{ steps.prcomm.outputs.TRAILING_LINE }} --token "${{secrets.APP_CENTER_TOKEN}}" -a "$GITHUB_REPOSITORY-ios" --output json)
+          echo "::set-output name=comment::$comment"
+          
+      - name: Dump GitHub context
+        if: steps.prcomm.outputs.BOOL_TRIGGERED == 'true'
+        id: gh_event
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github.event) }}
+        run: |
+          echo $GITHUB_CONTEXT
+        
+      - name: Create or Update Comment
+        if: steps.prcomm.outputs.BOOL_TRIGGERED == 'true'
+        uses: peter-evans/create-or-update-comment@v1.1.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            <br />
+            <details><summary>Output</summary>
+            <p>
+            ${{ steps.cli.outputs.comment }}
+            </p>
+            </details>

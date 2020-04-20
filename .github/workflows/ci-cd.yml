@@ -1,0 +1,227 @@
+name: CI/CD
+
+on:
+ push:
+    branches:
+      - master
+      - release
+    paths-ignore:
+      - '.distribute/**'
+      - '.github/**'
+
+jobs:
+  ios-build:
+    runs-on: macos-latest
+    steps:
+      
+      - uses: actions/checkout@v1
+      
+      - name: Set up Gpg
+        run: brew install gnupg
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v1.3.0
+ 
+      - name: Setup Provisioning Profile
+        run: |
+          ./.github/secrets/decrypt_secrets.sh
+          ./.github/secrets/decrypt_store_secrets.sh
+        env:
+          IOS_PROFILE_KEY: ${{ secrets.IOS_PROFILE_KEY }}
+
+      - name: Build App
+        run: flutter build ios  --release --no-codesign
+
+      - name: Test App
+        run: flutter test
+            
+      - name: Export and Sign iOS App
+        run: |
+          cd ios && xcodebuild archive \
+              -workspace Runner.xcworkspace \
+              -scheme Runner \
+              -sdk iphoneos13.2 \
+              -configuration Release \
+              -archivePath $PWD/build/Runner.xcarchive
+              PROVISIONING_PROFILE="acdfe2eb-e759-40ba-a4be-2c34881dc531.mobileprovision" \
+              CODE_SIGN_IDENTITY="Apple Distribution: Ahmed Bilal (GN59297KTA)"
+          cd .. && xcodebuild \
+            -exportArchive \
+            -archivePath $PWD/ios/build/Runner.xcarchive \
+            -exportOptionsPlist $PWD/ios/groups.plist \
+            -exportPath $PWD/ios/build
+           
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v1.0.0
+        with:
+          name: ios-build
+          path: ios/build
+        
+  android-build:
+    runs-on: ubuntu-latest
+    steps:
+      
+      - uses: actions/checkout@v1
+
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v1.3.0
+
+      - name: Build App
+        run: |
+         flutter build apk --debug --target-platform  android-arm64
+      
+      - name: Test App
+        run: flutter test
+       
+      - name: Sign android Release
+        if: 1 == 2
+        uses: r0adkll/sign-android-release@v1
+        with:
+          releaseDirectory: build/app/outputs/apk/debug
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+        
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v1.0.0
+        with:
+          name: android-build
+          path: build/app/outputs/apk/debug
+
+  distribute-to-groups:
+    needs: [ios-build, android-build]
+    runs-on: ubuntu-latest
+    steps:
+     
+      - uses: actions/checkout@v1
+
+      - name: Setup Python
+        uses: actions/setup-python@v1.2.0
+
+      - name: Download iOS artifact
+        uses: actions/download-artifact@v1.0.0
+        with:
+          name: ios-build
+          path: ios/build
+
+      - name: Download android artifact
+        uses: actions/download-artifact@v1.0.0
+        with:
+          name: android-build
+          path: build/app/outputs/apk/debug
+      
+      - name: Read Configuration
+        id: dist_config
+        run: |
+          pip install PyYAML
+          group=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "destinations-group" ${{ github.base_ref }} )
+          ios_store=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "destinations-ios-store" ${{ github.base_ref }} )
+          android_store=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "destinations-android-store" ${{ github.base_ref }} )
+          notify_testers=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "notify_testers" ${{ github.base_ref }} )
+          release_type=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "build" ${{ github.base_ref }} )
+          publish=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "publish" ${{ github.base_ref }} )
+          prerelease=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "prerelease" ${{ github.base_ref }} )
+          draft=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "draft" ${{ github.base_ref }} )
+          prerelease=$(echo $prerelease | tr '[:upper:]' '[:lower:]') 
+          draft=$(echo $draft | tr '[:upper:]' '[:lower:]') 
+          echo "::set-output name=group::"${group//\'}""
+          echo "::set-output name=ios_store::"${ios_store//\'}""
+          echo "::set-output name=android_store::"${android_store//\'}""
+          echo "::set-output name=notify_testers::"${notify_testers//\'}""
+          echo "::set-output name=publish::"${publish//\'}""
+          echo "::set-output name=release_type::"${release_type//\'}""
+          echo "::set-output name=prerelease::"${prerelease//\'}""
+          echo "::set-output name=draft::"${draft//\'}""
+
+      - name: Distribute with App Center
+        run: |
+          npm install appcenter-cli@2.3.3
+          npx appcenter distribute release --token "${{secrets.APP_CENTER_TOKEN}}" -a "$GITHUB_REPOSITORY-ios" -g ${{ steps.dist_config.outputs.group }} --file ios/build/Runner.ipa --release-notes "$(git log -1 --pretty=format:%s)"
+          npx appcenter distribute release --token "${{secrets.APP_CENTER_TOKEN}}" -a "$GITHUB_REPOSITORY-android" -g ${{ steps.dist_config.outputs.group }} --file build/app/outputs/apk/debug/app-debug.apk --release-notes "$(git log -1 --pretty=format:%s)"
+
+      - name: Update Groups
+        run: |
+          branch=$(git rev-parse --abbrev-ref HEAD)
+          git checkout -f master
+          pip install PyYAML
+          pip install requests
+          python .github/workflows/lib/get_groups.py $GITHUB_REPOSITORY ${{secrets.APP_CENTER_TOKEN}}
+          python .github/workflows/lib/get_releases.py $GITHUB_REPOSITORY ${{secrets.APP_CENTER_TOKEN}}
+          git config --global user.email "ahdbilal@github.com"
+          git config --global user.name "ahdbilal"
+          git add .distribute/groups.yml
+          git add .distribute/releases.yml
+          git commit -m "updated groups/releases"
+          remote_repo="https://${GITHUB_ACTOR}:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY.git"
+          git push "${remote_repo}" HEAD:master --force
+          git checkout -f $branch
+          
+      - name: Prepare to create release
+        if: steps.dist_config.outputs.publish == 'True'  
+        id: release-details
+        run: |
+          zip -r ios/build.zip ios/build
+          zip -r build/app/outputs/apk/debug.zip build/app/outputs/apk/debug
+          temp=$(curl -X GET "https://api.appcenter.ms/v0.1/apps/$GITHUB_REPOSITORY-ios/distribution_groups/${{ steps.dist_config.outputs.group }}/releases/latest" -H "accept: application/json" -H "X-API-Token: ${{secrets.APP_CENTER_TOKEN}}")
+          id=$(echo $temp | python3 -c "import sys, json; print(json.load(sys.stdin)['id'])")
+          version=$(echo $temp | python3 -c "import sys, json; print(json.load(sys.stdin)['short_version'])")
+          pull_number=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
+          echo "::set-output name=id::$id"
+          echo "::set-output name=version::$version" 
+          echo "::set-output name=app_name::"${GITHUB_REPOSITORY##*/}""
+          echo "::set-output name=pull_number::$pull_number"
+          temp2=$(curl -X GET "https://api.appcenter.ms/v0.1/apps/$GITHUB_REPOSITORY-ios/distribution_groups/${{ steps.dist_config.outputs.group }}" -H "accept: application/json" -H "X-API-Token: ${{secrets.APP_CENTER_TOKEN}}")
+          is_public=$(echo $temp2 | python3 -c "import sys, json; print(json.load(sys.stdin)['is_public'])")
+          if [ $is_public == 'True' ]
+          then
+             echo "::set-output name=ios-link::https://install.appcenter.ms/users/$GITHUB_ACTOR/apps/${GITHUB_REPOSITORY##*/}-ios/distribution_groups/${{ steps.dist_config.outputs.group }}/releases/$id"
+             echo "::set-output name=android-link::https://install.appcenter.ms/users/$GITHUB_ACTOR/apps/${GITHUB_REPOSITORY##*/}-android/distribution_groups/${{ steps.dist_config.outputs.group }}/releases/$id"
+          else
+             echo "::set-output name=ios-link::https://install.appcenter.ms/users/$GITHUB_ACTOR/apps/${GITHUB_REPOSITORY##*/}-ios/releases/$id"
+             echo "::set-output name=android-link::https://install.appcenter.ms/users/$GITHUB_ACTOR/apps/${GITHUB_REPOSITORY##*/}-android/releases/$id"
+          fi
+      
+      - name: Create a Release
+        id: create-release
+        if: steps.dist_config.outputs.publish == 'True'
+        uses: actions/create-release@v1
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+            tag_name: v${{ steps.release-details.outputs.version }}-${{ steps.dist_config.outputs.release_type }}.${{ steps.release-details.outputs.id }}
+            release_name: "${{ steps.release-details.outputs.app_name }} v${{ steps.release-details.outputs.version }}"
+            body: ${{ env.COMMIT_MESSAGE }}
+            draft: ${{ steps.dist_config.outputs.draft }}
+            prerelease: ${{ steps.dist_config.outputs.prerelease }}
+          
+
+      - name: Upload iOS Release Asset
+        id: upload-release-asset 
+        if: steps.dist_config.outputs.publish == 'True'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: ios/build.zip
+          asset_name: ios-build
+          asset_content_type: application/zip
+
+      - name: Upload Android Release Asset
+        if: steps.dist_config.outputs.publish == 'True'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: build/app/outputs/apk/debug.zip
+          asset_name: android-build
+          asset_content_type: application/zip
+
+

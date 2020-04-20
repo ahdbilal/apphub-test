@@ -1,0 +1,40 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Configure Repo
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  create:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+
+    - name: Setup Python
+      uses: actions/setup-python@v1.2.0
+
+    - name: if_create_on_master
+      id: gh_event
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: |
+        ref=$(echo $GITHUB_CONTEXT | python3 -c "import sys, json; print(json.load(sys.stdin)['ref'])")
+        trigger=$(echo $ref | python3 -c "import sys; print(\"master\" in sys.stdin.readline())")
+        echo "::set-output name=trigger::"${trigger//\'}""
+
+    # Runs a single command using the runners shell
+    - name: Configure Apps
+      if: steps.gh_event.outputs.trigger == 'True'
+      run: |
+        npm install appcenter-cli@2.3.3
+        npx appcenter apps create -p Objective-C-Swift -o iOS -r "Github" -d ${GITHUB_REPOSITORY##*/}-ios -n ${GITHUB_REPOSITORY##*/}-ios --token e420a4da021fe8d5fcc68c98884157719262ca8a
+        npx appcenter apps create -p Java -o Android -r "Github" -d ${GITHUB_REPOSITORY##*/}-android -n ${GITHUB_REPOSITORY##*/}-android --token e420a4da021fe8d5fcc68c98884157719262ca8a
+

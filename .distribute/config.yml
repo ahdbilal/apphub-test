@@ -1,0 +1,14 @@
+-   branch: master
+    event: push
+    release:
+        build: beta
+        publish: true
+        prerelease: true
+        draft: false
+    destinations: 
+        group: beta_group
+        store:
+            ios:
+            android:
+        mandatory_update: false
+        notify_testers: true
