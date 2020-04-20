@@ -120,75 +120,76 @@ def manage_alias(file):
 def sync_groups(g,cfg,platform):
 
     # add group
-    for group in cfg:
-        print(group["name"])
-        if group["name"] not in [i["name"] for i in g.get_groups()]:
-            g.add_group(group["name"],str(group["is_public"]).lower())
-            print("added group: {0}".format(group["name"]))
-    
-        #check access settings
-        #if group["is_public"] != [i["is_public"] for i in cfg if i["name"] == group["name"]][0]:
-            # to do
+    if cfg != None:
+        for group in cfg:
+            print(group["name"])
+            if group["name"] not in [i["name"] for i in g.get_groups()]:
+                g.add_group(group["name"],str(group["is_public"]).lower())
+                print("added group: {0}".format(group["name"]))
+        
+            #check access settings
+            #if group["is_public"] != [i["is_public"] for i in cfg if i["name"] == group["name"]][0]:
+                # to do
 
-        # add users
-        if [i["members"][platform] for i in cfg if i["name"] == group["name"]][0]!=None:
-            for user in [i["members"][platform] for i in cfg if i["name"] == group["name"]][0]:
-                if "include" in user:
-                    alias_users=manage_alias(".distribute/alias/"+user.split(" ")[1])
-                    for alias_user in alias_users:
-                        if alias_user not in [i["email"] for i in g.get_users(group["name"])]:
-                            g.add_user(group["name"],alias_user)
-                            print("updated/added alias: {0}".format(user.split(" ")[1]))    
-                elif user not in [i["email"] for i in g.get_users(group["name"])]:
-                    g.add_user(group["name"],user)
-                    print("added user: {0}".format(user))
-    
-        #delete users
-        if [i["email"] for i in g.get_users(group["name"])]==[]:
-            pass
-        elif [i["members"][platform]for i in cfg if i["name"] == group["name"]][0]==None:
-            for user in [i["email"] for i in g.get_users(group["name"])]:
-                    g.delete_user(group["name"],user)
-                    print("deleted user: {0}".format(user))
-        else: 
-            for user in [i["email"] for i in g.get_users(group["name"])]:
-                if "include" in str([i["members"][platform] for i in cfg if i["name"] == group["name"]][0]):
-                    #alias_users=manage_alias(".distribute/alias/"+user.split(" ")[1])
-                    for user in [i["email"] for i in g.get_users(group["name"])]:
-                        if user not in alias_users:
-                            g.delete_user(group["name"],user)
-                            #print("updated/deleted alias: {0}".format(user.split(" ")[1]))  
-                elif user not in [i["members"][platform] for i in cfg if i["name"] == group["name"]][0]:
-                    g.delete_user(group["name"],user)
-                    print("deleted user: {0}".format(user))
-            # add release
-            if [i["releases"] for i in cfg if i["name"] == group["name"]][0]!=None:
-                for release in [i["releases"] for i in cfg if i["name"] == group["name"]][0]:
-                        if release not in [i["id"] for i in g.get_releases(group["name"])]:
+            # add users
+            if [i["members"][platform] for i in cfg if i["name"] == group["name"]][0]!=None:
+                for user in [i["members"][platform] for i in cfg if i["name"] == group["name"]][0]:
+                    if "include" in user:
+                        alias_users=manage_alias(".distribute/alias/"+user.split(" ")[1])
+                        for alias_user in alias_users:
+                            if alias_user not in [i["email"] for i in g.get_users(group["name"])]:
+                                g.add_user(group["name"],alias_user)
+                                print("updated/added alias: {0}".format(user.split(" ")[1]))    
+                    elif user not in [i["email"] for i in g.get_users(group["name"])]:
+                        g.add_user(group["name"],user)
+                        print("added user: {0}".format(user))
+        
+            #delete users
+            if [i["email"] for i in g.get_users(group["name"])]==[]:
+                pass
+            elif [i["members"][platform]for i in cfg if i["name"] == group["name"]][0]==None:
+                for user in [i["email"] for i in g.get_users(group["name"])]:
+                        g.delete_user(group["name"],user)
+                        print("deleted user: {0}".format(user))
+            else: 
+                for user in [i["email"] for i in g.get_users(group["name"])]:
+                    if "include" in str([i["members"][platform] for i in cfg if i["name"] == group["name"]][0]):
+                        #alias_users=manage_alias(".distribute/alias/"+user.split(" ")[1])
+                        for user in [i["email"] for i in g.get_users(group["name"])]:
+                            if user not in alias_users:
+                                g.delete_user(group["name"],user)
+                                #print("updated/deleted alias: {0}".format(user.split(" ")[1]))  
+                    elif user not in [i["members"][platform] for i in cfg if i["name"] == group["name"]][0]:
+                        g.delete_user(group["name"],user)
+                        print("deleted user: {0}".format(user))
+                # add release
+                if [i["releases"] for i in cfg if i["name"] == group["name"]][0]!=None:
+                    for release in [i["releases"] for i in cfg if i["name"] == group["name"]][0]:
+                            if release not in [i["id"] for i in g.get_releases(group["name"])]:
+                                group_id=[i["id"] for i in g.get_groups() if i["name"] == group["name"]][0]                   
+                                g.add_release(group_id,str(release))
+                                print("added release: {0}".format(release))
+
+            # delete release
+            if [i["id"] for i in g.get_releases(group["name"])]==[]:
+                pass
+            elif [i["releases"] for i in cfg if i["name"] == group["name"]][0]==None:
+                for release in [i["id"] for i in g.get_releases(group["name"])]:
+                    group_id=[i["id"] for i in g.get_groups() if i["name"] == group["name"]][0]                   
+                    g.delete_release(group_id,str(release))
+                    print("deleted release: {0}".format(release))
+            else:
+                for release in [i["id"] for i in g.get_releases(group["name"])]:
+                        if release not in [i["releases"] for i in cfg if i["name"] == group["name"]][0]:
                             group_id=[i["id"] for i in g.get_groups() if i["name"] == group["name"]][0]                   
-                            g.add_release(group_id,str(release))
-                            print("added release: {0}".format(release))
-
-        # delete release
-        if [i["id"] for i in g.get_releases(group["name"])]==[]:
-            pass
-        elif [i["releases"] for i in cfg if i["name"] == group["name"]][0]==None:
-            for release in [i["id"] for i in g.get_releases(group["name"])]:
-                group_id=[i["id"] for i in g.get_groups() if i["name"] == group["name"]][0]                   
-                g.delete_release(group_id,str(release))
-                print("deleted release: {0}".format(release))
-        else:
-            for release in [i["id"] for i in g.get_releases(group["name"])]:
-                    if release not in [i["releases"] for i in cfg if i["name"] == group["name"]][0]:
-                        group_id=[i["id"] for i in g.get_groups() if i["name"] == group["name"]][0]                   
-                        g.delete_release(group_id,str(release))
-                        print("deleted release: {0}".format(release))
-    
-    # delete group
-    for group in g.get_groups():
-        if group["name"] not in [i["name"] for i in cfg]:
-            g.delete_group(group["name"])
-            print("deleted group: {0}".format(group["name"]))
+                            g.delete_release(group_id,str(release))
+                            print("deleted release: {0}".format(release))
+        
+        # delete group
+        for group in g.get_groups():
+            if group["name"] not in [i["name"] for i in cfg]:
+                g.delete_group(group["name"])
+                print("deleted group: {0}".format(group["name"]))
 
 def main():
     
@@ -213,7 +214,7 @@ def main():
 if __name__== "__main__":
   main()
 
-#python .github/workflows/lib/put_groups.py ahdbilal/apphub-android ahdbilal/apphub-ios e420a4da021fe8d5fcc68c98884157719262ca8a
-#python .github/workflows/lib/get_groups.py ahdbilal/apphub e420a4da021fe8d5fcc68c98884157719262ca8a
-#python .github/workflows/lib/get_releases.py ahdbilal/apphub e420a4da021fe8d5fcc68c98884157719262ca8a
-
+#python .github/workflows/lib/put_groups.py ahdbilal/apphub-test e420a4da021fe8d5fcc68c98884157719262ca8a
+#python .github/workflows/lib/get_groups.py ahdbilal/apphub-test e420a4da021fe8d5fcc68c98884157719262ca8a
+#python .github/workflows/lib/get_releases.py ahdbilal/apphub-test e420a4da021fe8d5fcc68c98884157719262ca8a
+#python .github/workflows/lib/put_releases.py ahdbilal/apphub-test e420a4da021fe8d5fcc68c98884157719262ca8a
