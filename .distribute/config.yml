@@ -12,3 +12,19 @@
             android:
         mandatory_update: false
         notify_testers: true
+
+  
+-   branch: master
+    event: pull
+    release:
+        build: beta
+        publish: true
+        prerelease: true
+        draft: false
+    destinations: 
+        group: alpha_group
+        store:
+            ios:
+            android:
+        mandatory_update: false
+        notify_testers: true
