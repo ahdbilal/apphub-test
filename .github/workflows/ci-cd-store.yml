@@ -112,23 +112,24 @@ jobs:
         id: dist_config
         run: |
           pip install PyYAML
-          group=$(echo python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "destinations-group" ${{ github.base_ref }} )
-          ios_store=$(echo python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "destinations-ios-store" ${{ github.base_ref }} )
-          android_store=$(echo python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "destinations-android-store" ${{ github.base_ref }} )
-          notify_testers=$(echo python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "notify_testers" ${{ github.base_ref }} )
-          prerelease=$(echo python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "prerelease" ${{ github.base_ref }} )
-          release_type=$(echo python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "built" ${{ github.base_ref }} )
-          draft=$(echo python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "draft" ${{ github.base_ref }} )
+          group=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "destinations-group" ${{ github.base_ref }} )
+          ios_store=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "destinations-ios-store" ${{ github.base_ref }} )
+          android_store=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "destinations-android-store" ${{ github.base_ref }} )
+          notify_testers=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "notify_testers" ${{ github.base_ref }} )
+          release_type=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "build" ${{ github.base_ref }} )
+          publish=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "publish" ${{ github.base_ref }} )
+          prerelease=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "prerelease" ${{ github.base_ref }} )
+          draft=$(python3 .github/workflows/lib/read_dist_config.py ${{ github.ref }} ${{ github.event_name }} "draft" ${{ github.base_ref }} )
           prerelease=$(echo $prerelease | tr '[:upper:]' '[:lower:]') 
           draft=$(echo $draft | tr '[:upper:]' '[:lower:]') 
           echo "::set-output name=group::"${group//\'}""
           echo "::set-output name=ios_store::"${ios_store//\'}""
           echo "::set-output name=android_store::"${android_store//\'}""
           echo "::set-output name=notify_testers::"${notify_testers//\'}""
-          echo "::set-output name=prerelease::"${prerelease//\'}""
+          echo "::set-output name=publish::"${publish//\'}""
           echo "::set-output name=release_type::"${release_type//\'}""
+          echo "::set-output name=prerelease::"${prerelease//\'}""
           echo "::set-output name=draft::"${draft//\'}""
-
       - name: Distribute with App Center
         run: |
           npm install appcenter-cli@2.3.3
