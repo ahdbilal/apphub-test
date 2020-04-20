@@ -52,14 +52,6 @@ jobs:
             -archivePath $PWD/ios/build/Runner.xcarchive \
             -exportOptionsPlist $PWD/ios/groups.plist \
             -exportPath $PWD/ios/build
-            
-      - name: Sign iOS Release
-        run: |
-          xcodebuild \
-            -exportArchive \
-            -archivePath $PWD/ios/build/Runner.xcarchive \
-            -exportOptionsPlist $PWD/ios/groups.plist \
-            -exportPath $PWD/ios/build
            
       - name: Upload Artifact
         uses: actions/upload-artifact@v1.0.0

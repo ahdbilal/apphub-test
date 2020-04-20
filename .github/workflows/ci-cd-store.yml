@@ -3,7 +3,7 @@ name: CI/CD to Store
 on:
  push:
     branches:
-      - 'release/store**'
+      - 'release**'
     paths-ignore:
       - '.distribute/**'
       - '.github/**'
