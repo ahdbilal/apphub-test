@@ -6,7 +6,7 @@
     ios:
     - ahbilal@microsoft.com
   releases: []
-  - name: alpha_group
+- name: alpha_group
   is_public: false
   members:
     android:
