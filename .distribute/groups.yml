@@ -9,7 +9,7 @@
     - ahdbilal@gmail.com
   releases:
   - 2
-- name: beta_external
+- name: beta_group
   is_public: false
   members:
     android:
@@ -18,7 +18,8 @@
     ios:
     - ahbilal@microsoft.com
     - ahmedbilal_@hotmail.com
-  releases: []
+  releases:
+  - 7
 - name: beta_internal
   is_public: false
   members:
