@@ -6,6 +6,7 @@
     ios:
     - ahbilal@microsoft.com
   releases: []
+
 - name: alpha_group
   is_public: false
   members:
@@ -15,3 +16,4 @@
     ios:
     - ahbilal@microsoft.com
     - ahdbilal@gmail.com
+  releases: []
