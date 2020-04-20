@@ -7,7 +7,8 @@
     ios:
     - ahbilal@microsoft.com
     - ahdbilal@gmail.com
-  releases: []
+  releases:
+  - 2
 - name: beta_external
   is_public: false
   members:
@@ -41,6 +42,6 @@
 - name: public
   is_public: true
   members:
-    android:
-    ios:
+    android: []
+    ios: []
   releases: []
